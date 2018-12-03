@@ -8,7 +8,7 @@ import torch.nn.functional as F
 
 class ImageBlock(nn.Module):
 
-	def __init__(self, in_channels, out_channels, stride=1):
+	def __init__(self, in_channels, out_channels, encoding_size, stride=1):
 		super(ImageBlock, self).__init__()
 
 		self.Conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
@@ -24,6 +24,8 @@ class ImageBlock(nn.Module):
 				nn.BatchNorm2d(out_channels),
 			)
 
+		self.fc = nn.Linear(12150*out_channels, encoding_size)
+
 	def forward(self, x):
 
 		output = self.Conv1(x)
@@ -36,6 +38,7 @@ class ImageBlock(nn.Module):
 
 		output = self.avgpool(output)
 		output = output.view(x.size(0), -1)
+		output = self.fc(output)
 		return output
 
 
@@ -43,8 +46,22 @@ class FullNetwork(nn.Module):
 	def __init__(self):
 		super(FullNetwork, self).__init__()
 
-		self.image_layer = nn.Sequential(ImageBlock(3, 32))
+		self.out_channels = 32
+		self.encoding_size = 1000
+		self.window_size = 5
+		self.class_size = 2
+
+		self.image_layer = nn.Sequential(ImageBlock(3, self.out_channels, self.encoding_size))
+
+		self.fc = nn.Linear(self.window_size*self.encoding_size, self.class_size)
+
 
 	def forward(self,x):
-		output = self.image_layer(x)
+		res = []
+		for i in x:
+			res.append(self.image_layer(i))
+
+		output = torch.cat(res, 1)
+
+		output = self.fc(output)
 		return output
