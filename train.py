@@ -56,7 +56,7 @@ def run():
 	#get_data()
 	print("Starting Training")
 
-	num_epochs = 10
+	num_epochs = 25
 	batch_size = 1000
 
 	loss_function = nn.CrossEntropyLoss().to(device)
@@ -100,15 +100,15 @@ def run():
 
 			data = torch.stack(data)
 			#print(data.size())
-			data.to(device)
-			label.to(device)
+			data = data.to(device)
+			label = label.to(device)
 
 			optimizer.zero_grad()
 
 			output = model(data)
 			#print(output)
 
-			label_vec = torch.LongTensor([int(label[1]==1)])
+			label_vec = torch.LongTensor([int(label[1]==1)]).to(device)
 			#print(label_vec)
 			#print(label_vec.size())
 			#print(output.size())
@@ -116,7 +116,9 @@ def run():
 			loss.backward()
 			total_loss += loss.item()
 			optimizer.step()
-		print(total_loss)
+		print(epoch, total_loss)
+	
+	torch.save(model.state_dict(), "model4.pt")
 
 
 
