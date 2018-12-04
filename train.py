@@ -12,6 +12,11 @@ lie_folder = './lies'
 truth_files = glob.glob(truth_folder+'/*.mp4')
 lie_files = glob.glob(lie_folder+'/*.mp4')
 
+train_truth_files = truth_files[:int(0.8*len(truth_files))]
+validate_truth_files = truth_files[int(0.8*len(truth_files)):]
+train_lie_files = lie_files[:int(0.8*len(lie_files))]
+validate_lie_files = lie_files[int(0.8*len(lie_files)):]
+
 total_truth_data = []
 total_lie_data = []
 
@@ -81,11 +86,11 @@ def run():
 		while len(data_sample) < 2*batch_size:
 			True_sample = (np.random.rand()>0.5)
 			if True_sample:
-				sample_ind = np.random.randint(len(truth_files))
-				data_sample.extend(get_data(truth_files[sample_ind], torch.Tensor([0,1])))
+				sample_ind = np.random.randint(len(train_truth_files))
+				data_sample.extend(get_data(train_truth_files[sample_ind], torch.Tensor([0,1])))
 			else:
-				sample_ind = np.random.randint(len(lie_files))
-				data_sample.extend(get_data(lie_files[sample_ind], torch.tensor([1,0])))
+				sample_ind = np.random.randint(len(train_lie_files))
+				data_sample.extend(get_data(train_lie_files[sample_ind], torch.Tensor([1,0])))
 
 		data_mask = np.random.randint(0,len(data_sample),batch_size)
 		batch_data = []
@@ -120,20 +125,63 @@ def run():
 	
 	torch.save(model.state_dict(), "model4.pt")
 
+def validate():
+	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+	model = FullNetwork()
+	model.load_state_dict(torch.load('./model4.pt', map_location=device))
+	model = model.to(device)
+
+	model.eval()
+
+	num_validation_points = 100
+	validation_data = []
+
+	correct_points = 0
+	total_points = 0
+	correct_truth = 0
+	total_truth = 0
+	correct_lie = 0
+	total_lie = 0
+
+	for i in range(len(validate_truth_files)):
+		data, label = get_data(validate_truth_files[i], torch.Tensor([0,1]))
+
+		data = torch.stack(data)
+		data = data.to(device)
+		label = label.to(device)
+
+		with torch.no_grad():
+			output = model(data)
+			output = output.to('cpu')[0,:]
+
+		if output[1] >= output[0]:
+			correct_points += 1
+			correct_truth += 1
+		total_points += 1
+		total_truth += 1
+
+	for i in range(len(validate_lie_files)):
+		data, label = get_data(validate_lie_files[i], torch.Tensor([1,0]))
+
+		data = torch.stack(data)
+		data = data.to(device)
+		label = label.to(device)
+
+		with torch.no_grad():
+			output = model(data)
+			output = output.to('cpu')[0,:]
+
+		if output[1] < output[0]:
+			correct_points += 1
+			correct_lie += 1
+		total_points += 1
+		total_lie += 1
+
+	print("The toal accuracy is: " + str(float(correct_points)/total_points))
+	print("The truth accuracy is: " + str(float(correct_truth)/total_truth))
+	print("The lie accuracy is: " + str(float(correct_lie)/total_lie))
 
 
-#print(len(total_truth_data))
-#print(len(total_truth_data[0]))
-#print(len(total_truth_data[0][0]))
-#print(total_truth_data[0][0][0].shape)
-run()
-#get_data()
-#print len(total_truth_data)
-#print len(total_lie_data)
-
-
-
-
-
-
-
+#run()
+validate()
