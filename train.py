@@ -9,6 +9,9 @@ from model import *
 truth_folder = './truths'
 lie_folder = './lies'
 
+truth_files = glob.glob(truth_folder+'/*.mp4')
+lie_files = glob.glob(lie_folder+'/*.mp4')
+
 total_truth_data = []
 total_lie_data = []
 
@@ -19,6 +22,21 @@ def break_into_window(segs, window_size, label):
 		res.append(data)
 	return res
 
+def get_data(file, label):
+	vid_segs = []
+	vc = cv2.VideoCapture(file)
+	if vc.isOpened():
+		rval, frame = vc.read()
+	else:
+		rval = False
+	while rval:
+		rval, frame = vc.read()
+		if type(frame) != type(None):
+			vid_segs.append(format_image(frame))
+
+	return break_into_window(vid_segs, 5, label)
+
+'''
 def get_data():
 
 	for vid in glob.glob(truth_folder+'/*.mp4'):	
@@ -50,6 +68,7 @@ def get_data():
 		vc.release()
 
 		total_lie_data.extend(break_into_window(vid_segs, 5, torch.Tensor([1,0])))
+'''
 
 def format_image(img):
 
@@ -68,7 +87,7 @@ def run():
 	model = FullNetwork()
 	model = model.to(device)
 
-	get_data()
+	#get_data()
 	print("Starting Training")
 
 	num_epochs = 1
@@ -76,27 +95,39 @@ def run():
 	loss_function = nn.CrossEntropyLoss().to(device)
 	optimizer = optim.SGD(model.parameters(), lr = 0.001)
 
+	True_sample = True
+	sample_count = 0
+
 	for epoch in range(num_epochs):
 		total_loss = 0
 
-		for i in range(len(total_truth_data)):
-			print(i)
-			data, label = total_truth_data[i]
+		data_sample = None
+		if True_sample:
+			data_sample = get_data(truth_files[sample_count], torch.Tensor([0,1]))
+			True_sample = False
+		else:
+			data_sample = get_data(lie_files[sample_count], torch.Tensor([1,0]))
+			True_sample = True
+			sample_count += 1
 
-			print(torch.sum(data[0]))
+		for i in range(len(data_sample)):
+			print(i)
+			data, label = data_sample[i]
+
+			#print(torch.sum(data[0]))
 
 			data = torch.stack(data)
-			print data.size()
+			#print(data.size())
 			data.to(device)
 			label.to(device)
 
 			optimizer.zero_grad()
 
 			output = model(data)
-			print(output)
+			#print(output)
 
 			label_vec = torch.LongTensor([int(label[1]==1)])
-			print(label_vec)
+			#print(label_vec)
 			#print(label_vec.size())
 			#print(output.size())
 			loss = loss_function(output, label_vec)
