@@ -36,40 +36,6 @@ def get_data(file, label):
 
 	return break_into_window(vid_segs, 5, label)
 
-'''
-def get_data():
-
-	for vid in glob.glob(truth_folder+'/*.mp4'):	
-		vid_segs = []
-		vc = cv2.VideoCapture(vid)
-		if vc.isOpened():
-			rval, frame = vc.read()
-		else:
-			rval = False
-		while rval:
-			rval, frame = vc.read()
-			if type(frame) != type(None):
-				vid_segs.append(format_image(frame))
-		vc.release()
-
-		total_truth_data.extend(break_into_window(vid_segs, 5, torch.Tensor([0,1])))
-
-	for vid in glob.glob(lie_folder+'/*.mp4'):
-		vid_segs = []
-		vc = cv2.VideoCapture(vid)
-		if vc.isOpened():
-			rval, frame = vc.read()
-		else:
-			rval = False
-		while rval:
-			rval, frame = vc.read()
-			if type(frame) != type(None):
-				vid_segs.append(format_image(frame))
-		vc.release()
-
-		total_lie_data.extend(break_into_window(vid_segs, 5, torch.Tensor([1,0])))
-'''
-
 def format_image(img):
 
 	img = cv2.resize(img, (854, 480), interpolation=cv2.INTER_LINEAR)
@@ -90,17 +56,18 @@ def run():
 	#get_data()
 	print("Starting Training")
 
-	num_epochs = 1
+	num_epochs = 10
+	batch_size = 1000
 
 	loss_function = nn.CrossEntropyLoss().to(device)
-	optimizer = optim.SGD(model.parameters(), lr = 0.001)
+	optimizer = optim.SGD(model.parameters(), lr = 0.0001)
 
 	True_sample = True
 	sample_count = 0
 
 	for epoch in range(num_epochs):
 		total_loss = 0
-
+		'''
 		data_sample = None
 		if True_sample:
 			data_sample = get_data(truth_files[sample_count], torch.Tensor([0,1]))
@@ -109,10 +76,25 @@ def run():
 			data_sample = get_data(lie_files[sample_count], torch.Tensor([1,0]))
 			True_sample = True
 			sample_count += 1
+		'''
+		data_sample = []
+		while len(data_sample) < 2*batch_size:
+			True_sample = (np.random.rand()>0.5)
+			if True_sample:
+				sample_ind = np.random.randint(len(truth_files))
+				data_sample.extend(get_data(truth_files[sample_ind], torch.Tensor([0,1])))
+			else:
+				sample_ind = np.random.randint(len(lie_files))
+				data_sample.extend(get_data(lie_files[sample_ind], torch.tensor([1,0])))
 
-		for i in range(len(data_sample)):
-			print(i)
-			data, label = data_sample[i]
+		data_mask = np.random.randint(0,len(data_sample),batch_size)
+		batch_data = []
+		for i in range(len(data_mask)):
+			batch_data.append(data_sample[data_mask[i]])
+
+		for i in range(len(batch_data)):
+			#print(i)
+			data, label = batch_data[i]
 
 			#print(torch.sum(data[0]))
 
@@ -134,7 +116,7 @@ def run():
 			loss.backward()
 			total_loss += loss.item()
 			optimizer.step()
-			print(total_loss)
+		print(total_loss)
 
 
 
