@@ -21,7 +21,7 @@ def break_into_window(segs, window_size, label):
 
 def get_data():
 
-	for vid in glob.glob(truth_folder+'/*.mov'):
+	for vid in glob.glob(truth_folder+'/*.mp4'):	
 		vid_segs = []
 		vc = cv2.VideoCapture(vid)
 		if vc.isOpened():
@@ -34,9 +34,9 @@ def get_data():
 				vid_segs.append(format_image(frame))
 		vc.release()
 
-		total_truth_data.extend(break_into_window(vid_segs, 5, [0,1]))
+		total_truth_data.extend(break_into_window(vid_segs, 5, torch.Tensor([0,1])))
 
-	for vid in glob.glob(lie_folder+'/*.mov'):
+	for vid in glob.glob(lie_folder+'/*.mp4'):
 		vid_segs = []
 		vc = cv2.VideoCapture(vid)
 		if vc.isOpened():
@@ -49,9 +49,11 @@ def get_data():
 				vid_segs.append(format_image(frame))
 		vc.release()
 
-		total_lie_data.extend(break_into_window(vid_segs, 5, [1,0]))
+		total_lie_data.extend(break_into_window(vid_segs, 5, torch.Tensor([1,0])))
 
 def format_image(img):
+
+	img = cv2.resize(img, (854, 480), interpolation=cv2.INTER_LINEAR)
 	inp = np.array([img], dtype='float32')
 	inp = np.swapaxes(inp, 1,3)
 	inp = np.swapaxes(inp, 2,3)
@@ -64,14 +66,15 @@ def run():
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 	model = FullNetwork()
-	#model = model.to(device)
+	model = model.to(device)
 
 	get_data()
+	print("Starting Training")
 
 	num_epochs = 1
 
-	loss_function = nn.CrossEntropyLoss()
-	optimizer = optim.SGD(model.parameters(), lr = 0.05)
+	loss_function = nn.CrossEntropyLoss().to(device)
+	optimizer = optim.SGD(model.parameters(), lr = 0.001)
 
 	for epoch in range(num_epochs):
 		total_loss = 0
@@ -80,10 +83,20 @@ def run():
 			print(i)
 			data, label = total_truth_data[i]
 
-			optimizer.zero_grad()
-			output = model(data)
+			print(torch.sum(data[0]))
 
-			label_vec = torch.LongTensor([label[1]==1])
+			data = torch.stack(data)
+			print data.size()
+			data.to(device)
+			label.to(device)
+
+			optimizer.zero_grad()
+
+			output = model(data)
+			print(output)
+
+			label_vec = torch.LongTensor([int(label[1]==1)])
+			print(label_vec)
 			#print(label_vec.size())
 			#print(output.size())
 			loss = loss_function(output, label_vec)
@@ -99,3 +112,13 @@ def run():
 #print(len(total_truth_data[0][0]))
 #print(total_truth_data[0][0][0].shape)
 run()
+#get_data()
+#print len(total_truth_data)
+#print len(total_lie_data)
+
+
+
+
+
+
+

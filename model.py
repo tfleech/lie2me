@@ -24,7 +24,7 @@ class ImageBlock(nn.Module):
 				nn.BatchNorm2d(out_channels),
 			)
 
-		self.fc = nn.Linear(12150*out_channels, encoding_size)
+		self.fc = nn.Linear(6360*out_channels, encoding_size)
 
 	def forward(self, x):
 
