@@ -123,13 +123,13 @@ def run():
 			optimizer.step()
 		print(epoch, total_loss)
 	
-	torch.save(model.state_dict(), "model4.pt")
+	torch.save(model.state_dict(), "model5.pt")
 
 def validate():
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 	model = FullNetwork()
-	model.load_state_dict(torch.load('./model4.pt', map_location=device))
+	model.load_state_dict(torch.load('./model5.pt', map_location=device))
 	model = model.to(device)
 
 	model.eval()
@@ -143,12 +143,12 @@ def validate():
 	total_truth = 0
 	correct_lie = 0
 	total_lie = 0
-	validate_truth_files = glob.glob('./test_lie/l2.mov')
-	print(validate_truth_files)
+	#validate_truth_files = glob.glob('./test_lie/l2.mov')
+	#print(validate_truth_files)
 	for i in range(len(validate_truth_files)):
-		print("truth", i)
-		data_list = get_data(validate_truth_files[i], torch.Tensor([1,0]))
-		print(len(data_list))
+		#print("truth", i)
+		data_list = get_data(validate_truth_files[i], torch.Tensor([0,1]))
+		#print(len(data_list))
 		for j in range(len(data_list)):
 			data, label = data_list[j]
 			data = torch.stack(data)
@@ -165,7 +165,7 @@ def validate():
 			total_points += 1
 			total_truth += 1
 
-	"""
+	
 	for i in range(len(validate_lie_files)):
 		print("lie", i)
 		data_list = get_data(validate_lie_files[i], torch.Tensor([1,0]))
@@ -185,11 +185,11 @@ def validate():
 				correct_lie += 1
 			total_points += 1
 			total_lie += 1
-	"""
+	
 	print("The total accuracy is: " + str(float(correct_points)/total_points))
 	print("The truth accuracy is: " + str(float(correct_truth)/total_truth))
-	#print("The lie accuracy is: " + str(float(correct_lie)/total_lie))
+	print("The lie accuracy is: " + str(float(correct_lie)/total_lie))
 
 
-#run()
-validate()
+run()
+#validate()
