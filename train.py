@@ -61,11 +61,11 @@ def run():
 	#get_data()
 	print("Starting Training")
 
-	num_epochs = 25
+	num_epochs = 105
 	batch_size = 1000
 
 	loss_function = nn.CrossEntropyLoss().to(device)
-	optimizer = optim.SGD(model.parameters(), lr = 0.0001)
+	optimizer = optim.Adam(model.parameters(), lr = 0.0001)
 
 	True_sample = True
 	sample_count = 0
@@ -122,6 +122,9 @@ def run():
 			total_loss += loss.item()
 			optimizer.step()
 		print(epoch, total_loss)
+
+		if epoch%15 == 0:
+			torch.save(model.state_dict(), "model_num%d.pt" % epoch)
 	
 	torch.save(model.state_dict(), "model5.pt")
 
