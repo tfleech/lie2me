@@ -143,44 +143,52 @@ def validate():
 	total_truth = 0
 	correct_lie = 0
 	total_lie = 0
-
+	validate_truth_files = glob.glob('./test_lie/l2.mov')
+	print(validate_truth_files)
 	for i in range(len(validate_truth_files)):
-		data, label = get_data(validate_truth_files[i], torch.Tensor([0,1]))
+		print("truth", i)
+		data_list = get_data(validate_truth_files[i], torch.Tensor([1,0]))
+		print(len(data_list))
+		for j in range(len(data_list)):
+			data, label = data_list[j]
+			data = torch.stack(data)
+			data = data.to(device)
+			label = label.to(device)
 
-		data = torch.stack(data)
-		data = data.to(device)
-		label = label.to(device)
+			with torch.no_grad():
+				output = model(data)
+				output = output.to('cpu')[0,:]
+			print(output)
+			if output[1] >= output[0]:
+				correct_points += 1
+				correct_truth += 1
+			total_points += 1
+			total_truth += 1
 
-		with torch.no_grad():
-			output = model(data)
-			output = output.to('cpu')[0,:]
-
-		if output[1] >= output[0]:
-			correct_points += 1
-			correct_truth += 1
-		total_points += 1
-		total_truth += 1
-
+	"""
 	for i in range(len(validate_lie_files)):
-		data, label = get_data(validate_lie_files[i], torch.Tensor([1,0]))
+		print("lie", i)
+		data_list = get_data(validate_lie_files[i], torch.Tensor([1,0]))
+		for j in range(len(data_list)):
+			data, label = data_list[j]
 
-		data = torch.stack(data)
-		data = data.to(device)
-		label = label.to(device)
+			data = torch.stack(data)
+			data = data.to(device)
+			label = label.to(device)
 
-		with torch.no_grad():
-			output = model(data)
-			output = output.to('cpu')[0,:]
+			with torch.no_grad():
+				output = model(data)
+				output = output.to('cpu')[0,:]
 
-		if output[1] < output[0]:
-			correct_points += 1
-			correct_lie += 1
-		total_points += 1
-		total_lie += 1
-
-	print("The toal accuracy is: " + str(float(correct_points)/total_points))
+			if output[1] < output[0]:
+				correct_points += 1
+				correct_lie += 1
+			total_points += 1
+			total_lie += 1
+	"""
+	print("The total accuracy is: " + str(float(correct_points)/total_points))
 	print("The truth accuracy is: " + str(float(correct_truth)/total_truth))
-	print("The lie accuracy is: " + str(float(correct_lie)/total_lie))
+	#print("The lie accuracy is: " + str(float(correct_lie)/total_lie))
 
 
 #run()
