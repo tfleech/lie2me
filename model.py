@@ -63,6 +63,6 @@ class FullNetwork(nn.Module):
 
 		output = torch.cat(res, 1)
 
-		#output = nn.Sequential(self.fc, nn.dropout(0.2))
+		#output = nn.Sequential(nn.Dropout(p=0.2), self.fc)
 		output = self.fc(output)
 		return output
