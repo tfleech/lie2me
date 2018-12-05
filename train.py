@@ -123,10 +123,10 @@ def run():
 			optimizer.step()
 		print(epoch, total_loss)
 
-		if epoch%15 == 0:
-			torch.save(model.state_dict(), "model_num%d.pt" % epoch)
+		if epoch%25 == 0:
+			torch.save(model.state_dict(), "model_num_dropout%d.pt" % epoch)
 	
-	torch.save(model.state_dict(), "model5.pt")
+	torch.save(model.state_dict(), "model6.pt")
 
 def validate():
 	device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
